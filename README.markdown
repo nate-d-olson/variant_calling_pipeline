@@ -10,3 +10,4 @@ See https://github.com/claresloggett/variant_calling_pipeline/
 THIS PIPELINE IS JUST A PROOF OF CONCEPT EXAMPLE
 
 IT'S NOT YET WORKING!
+
