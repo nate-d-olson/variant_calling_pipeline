@@ -1,5 +1,5 @@
 
-BASE="/mnt/storage/shared/genomes/hg19/gatk"
+BASE=".... PUT YOUR FILE LOCATION HERE ...."
 REF="$BASE/gatk.ucsc.hg19.fasta"
 DBSNP="$BASE/dbsnp_132.hg19.vcf"
 LOG="pipeline.log"
