@@ -8,7 +8,7 @@ This pipeline is a quick conversion of the pipeline at
 It doesn't work yet, and is largely untested.
 
 """
-load '../pipeline_stages_config.groovy'
+load 'pipeline_stages_config.groovy'
 
 run {
     // Assume: paired end reads
