@@ -1,44 +1,59 @@
+////////////////////////////////////////////////////////
+//
+// Pipeline stage definitions for example WGS variant calling 
+// pipeline
+// 
+////////////////////////////////////////////////////////
 
-BASE=".... PUT YOUR FILE LOCATION HERE ...."
-REF="$BASE/gatk.ucsc.hg19.fasta"
+// Set location of you reference files here (see below for the files required)
+REFBASE="..."
+
+// Set a good location for storing large temp files here (probably not /tmp)
+TMPDIR="/tmp"
+
+// Set location of Picard tools here
+PICARD_HOME="/usr/local/picard-tools"
+
+BASE="."
+REF="$REFBASE/gatk.ucsc.hg19.fasta"
 DBSNP="$BASE/dbsnp_132.hg19.vcf"
 LOG="pipeline.log"
 GOLD_STANDARD_INDELS="gold_standard_indels.vcf"// ?
 INDELS_100G="1000g_indels.vcf"// ?
 
 fastqc = {
-    exec "fastqc --quiet $input.gz"
-}
-
-fastqc = {
-    def fastqc_outputs = inputs.gz.collect { new File(it).name }*.replaceAll('.fastq.gz','_fastqc.zip')
-    produce(fastqc_outputs) {
-        exec "fastqc --quiet -o . $inputs.gz"
+    output.dir = "fastqc"
+    transform('.fastq.gz')  to('_fastqc.zip')  {
+        exec "fastqc --quiet -o ${output.dir} $inputs.gz"
     }
 }
 
 alignBWA = {
-
     var encoding_flag : "" // previous stage can set encoding_flag="-I ..."
-
+    output.dir="align"
     doc "Aligns using BWA. Note: assumes input file are gzipped"
     exec "bwa aln -t 8 $encoding_flag $REF $input.gz > $output.sai"
 }
 
 alignToSamSE = {
-    // Not sure what meta is ...
-    var meta : ""
+    output.dir="align"
     exec "bwa samse $REF $meta $input.sai $input.gz > $output.sam"
 }
 
 alignToSamPE = {
-    // Not sure what meta is ...
-    var meta : ""
+    output.dir="align"
     exec "bwa sampe $REF $meta $input1.sai $input2.sai $input2.gz $input2.gz > $output.sam"
 }
 
+@transform("bam")
 samToSortedBam = {
-    exec "./SortSam 6 VALIDATION_STRINGENCY=LENIENT INPUT=$input.sam OUTPUT=$output.bam SORT_ORDER=coordinate"
+    exec """
+        java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/lib/SortSam.jar 
+                    VALIDATION_STRINGENCY=LENIENT 
+                    INPUT=$input.sam 
+                    OUTPUT=$output.bam 
+                    SORT_ORDER=coordinate
+    """
 }
 
 mergeBams = {
@@ -72,7 +87,15 @@ realign = {
 }
 
 dedup = {
-    exec "./MarkDuplicates 6 INPUT=$input.bam REMOVE_DUPLICATES=true VALIDATION_STRINGENCY=LENIENT AS=true METRICS_FILE=$LOG OUTPUT=$output"
+    exec """
+        java -Xmx6g -Djava.io.tmpdir=$TMPDIR -jar $PICARD_HOME/lib/MarkDuplicates.jar
+             INPUT=$input.bam 
+             REMOVE_DUPLICATES=true 
+             VALIDATION_STRINGENCY=LENIENT 
+             AS=true 
+             METRICS_FILE=$LOG 
+             OUTPUT=$output.bam
+    """
 }
 
 baseQualRecalCount = {
