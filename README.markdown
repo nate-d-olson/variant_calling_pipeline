@@ -33,3 +33,10 @@ concurrency by running it with the -n flag:
  
 Assumes: paired end reads
 Assumes: files in form  *<sample_name>*_..._R1.fastq.gz, *<sample_name>*_..._R2.fastq.gz
+
+Note: if you just want to have a look at how the pipeline appears, you can find all the meat 
+in the following two files:
+
+  https://github.com/ssadedin/variant_calling_pipeline/blob/master/pipeline_stages_config.groovy
+  https://github.com/ssadedin/variant_calling_pipeline/blob/master/pipeline.groovy
+
