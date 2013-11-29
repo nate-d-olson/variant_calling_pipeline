@@ -1,4 +1,4 @@
-# Variant calling pipeline: Bpipe Example
+# GATK Based WGS Variant Calling Pipeline: Bpipe Example
 
 ## Overview
 
@@ -7,7 +7,29 @@ Victorian Life Sciences Computation Initiative (VLSCI), University of Melbourne.
 
 See https://github.com/claresloggett/variant_calling_pipeline/
 
-THIS PIPELINE IS JUST A PROOF OF CONCEPT EXAMPLE
+This example is intended as an illustration of how a full pipeline
+looks in Bpipe, especially for those who might be familiar with Ruffus.
+There are a number of places where the pipeline is non-ideal, but it has
+been kept that way to reflect the original as accurately as possible.
 
-IT'S NOT YET WORKING!
+One particular point of note is that the alignment output is stored
+in SAM format by some of the intermediate stages which would be very
+unadvisable for true whole-genome data. It is easy to make it store
+output in BAM format instead, so this would be a very advisable 
+change if you intend to run this pipeline on a lot of data. 
 
+There are a number of software requirements, which you should ensure are 
+satisfied before running the pipeline. These need to be configured 
+in the file called 'config.groovy'. A template
+is provided in config.groovy.template which you can use to 
+create the file and set the right paths to your tools and reference
+data.
+
+By default this pipeline will attempt to use all the available cores
+on the computer it runs on. If you don't wish to do that, limit the 
+concurrency by running it with the -n flag:
+
+    bpipe run -n 4 pipeline.groovy example_data/input_data_wgs/*.fastq.gz
+ 
+Assumes: paired end reads
+Assumes: files in form  *<sample_name>*_..._R1.fastq.gz, *<sample_name>*_..._R2.fastq.gz
