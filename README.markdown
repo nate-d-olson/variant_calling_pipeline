@@ -33,6 +33,8 @@ concurrency by running it with the -n flag:
  
 Assumes: paired end reads
 Assumes: files in form  *<sample_name>*_..._R1.fastq.gz, *<sample_name>*_..._R2.fastq.gz
+Assumes: Bpipe Version 0.9.8.5 or later
+
 
 Note: if you just want to have a look at how the pipeline appears, you can find all the meat 
 in the following two files:
