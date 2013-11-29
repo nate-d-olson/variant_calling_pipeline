@@ -1,52 +1,40 @@
 ////////////////////////////////////////////////////////
 //
 // Pipeline stage definitions for example WGS variant calling 
-// pipeline
+// pipeline. See pipeline.groovy for more information.
 // 
 ////////////////////////////////////////////////////////
 
-// Set location of you reference files here (see below for the files required)
-REFBASE="..."
-
-// Set a good location for storing large temp files here (probably not /tmp)
-TMPDIR="/tmp"
-
-// Set location of Picard tools here
-PICARD_HOME="/usr/local/picard-tools"
-
-BASE="."
-REF="$REFBASE/gatk.ucsc.hg19.fasta"
-DBSNP="$BASE/dbsnp_132.hg19.vcf"
-LOG="pipeline.log"
-GOLD_STANDARD_INDELS="gold_standard_indels.vcf"// ?
-INDELS_100G="1000g_indels.vcf"// ?
-
 fastqc = {
+    doc "Run FASTQC to generate QC metrics for the reads"
     output.dir = "fastqc"
     transform('.fastq.gz')  to('_fastqc.zip')  {
         exec "fastqc --quiet -o ${output.dir} $inputs.gz"
     }
 }
 
+@transform("sai")
 alignBWA = {
-    var encoding_flag : "" // previous stage can set encoding_flag="-I ..."
-    output.dir="align"
     doc "Aligns using BWA. Note: assumes input file are gzipped"
+    output.dir="align"
     exec "bwa aln -t 8 $encoding_flag $REF $input.gz > $output.sai"
 }
 
-alignToSamSE = {
-    output.dir="align"
-    exec "bwa samse $REF $meta $input.sai $input.gz > $output.sam"
-}
-
+@transform("sam")
 alignToSamPE = {
+    doc "Create SAM files from BWA alignment. Note that these will be very large."
     output.dir="align"
-    exec "bwa sampe $REF $meta $input1.sai $input2.sai $input2.gz $input2.gz > $output.sam"
+    branch.lane = (input.sai =~ /.*L([0-9]*)_*R.*/)[0][1].toInteger()
+    branch.sample = branch.name
+    exec """
+        bwa sampe $REF -r "@RG\\tID:1\\tPL:$PLATFORM\\tPU:${branch.lane}\\tSM:${branch.sample}"  $input1.sai $input2.sai $input2.gz $input2.gz > $output.sam
+    """
 }
 
 @transform("bam")
 samToSortedBam = {
+    doc "Sort a SAM file so that it is compatible with reference order and convert to BAM file"
+    output.dir="align"
     exec """
         java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/lib/SortSam.jar 
                     VALIDATION_STRINGENCY=LENIENT 
@@ -56,12 +44,23 @@ samToSortedBam = {
     """
 }
 
+@filter("merge")
 mergeBams = {
-    exec "./PicardMerge 6 $inputs.bam USE_THREADING=true VALIDATION_STRINGENCY=LENIENT AS=true OUTPUT=$output.bam"
+    doc "Merge BAM files from multiple lanes or samples together. BAM files should have unique sample names and / or read groups"
+    exec """
+            java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/MergeSamFiles.jar
+                ${inputs.bam.split().collect { "INPUT="+it }.join(' ')}
+                USE_THREADING=true 
+                VALIDATION_STRINGENCY=LENIENT 
+                AS=true 
+                OUTPUT=$output.bam 
+    """
 }
 
 indexBam = {
-    exec "samtools index $input.bam"
+    produce(input.bam + ".bai") {
+        exec "samtools index $input.bam"
+    }
     forward input
 }
 
@@ -79,14 +78,21 @@ indexVCF = {
 
 realignIntervals = {
     // Hard-coded to take 2 known indels files right now
-    exec "./GenomeAnalysisTK 1 -T RealignerTargetCreator -R $REF -I $input.bam --known $GOLD_STANDARD_INDELS --known $INDELS_100G -log $LOG -o $output.intervals"
+    output.dir="align"
+    exec """
+        java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar -T RealignerTargetCreator -R $REF -I $input.bam --known $GOLD_STANDARD_INDELS --known $INDELS_100G -log $LOG -o $output.intervals
+    """
 }
 
 realign = {
-    exec "./GenomeAnalysisTK 22 -T IndelRealigner -R $REF -I $input.bam -targetIntervals $input.intervals -log $LOG -o $output"
+    output.dir="align"
+    exec """
+        java -Xmx8g -jar $GATK/GenomeAnalysisTK.jar -T IndelRealigner -R $REF -I $input.bam -targetIntervals $input.intervals -log $LOG -o $output.bam
+    """
 }
 
 dedup = {
+    output.dir="align"
     exec """
         java -Xmx6g -Djava.io.tmpdir=$TMPDIR -jar $PICARD_HOME/lib/MarkDuplicates.jar
              INPUT=$input.bam 
@@ -99,46 +105,104 @@ dedup = {
 }
 
 baseQualRecalCount = {
-    exec "./GenomeAnalysisTK 12 -T CountCovariates -I $input.bam -R $REF --knownSites $DBSNP -nt 8 -l INFO -cov ReadGroupCovariate -cov QualityScoreCovariate -cov CycleCovariate -cov DinucCovariate -log $LOG -recalFile $output"
+    doc "Recalibrate base qualities in a BAM file so that quality metrics match actual observed error rates"
+    output.dir="align"
+    exec "java -Xmx12g -jar $GATK/GenomeAnalysisTK.jar -T BaseRecalibrator -I $input.bam -R $REF --knownSites $DBSNP -l INFO -cov ReadGroupCovariate -cov QualityScoreCovariate -cov CycleCovariate -cov ContextCovariate -log $LOG -o $output.counts"
 }
 
 baseQualRecalTabulate = {
-    exec "./GenomeAnalysisTK 4 -T TableRecalibration -I $input.bam -R $REF -recalFile $input.csv -l INFO -log $LOG -o $output"
+    doc "Recalibrate base qualities in a BAM file so that quality metrics match actual observed error rates"
+    output.dir="align"
+    exec "java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar -T PrintReads -I $input.bam -BQSR $input.counts -R $REF -l INFO -log $LOG -o $output"
 }
 
 callSNPs = {
-    exec "./GenomeAnalysisTK 12 -T UnifiedGenotyper -nt 8 -R $REF -I $input.bam --dbsnp $DBSNP -stand_call_conf 50.0 -stand_emit_conf 10.0 -dcov 1600 -l INFO -A AlleleBalance -A DepthOfCoverage -A FisherStrand -glm SNP -log $LOG -o $output"
+    doc "Call SNPs/SNVs using GATK Unified Genotyper"
+    output.dir="variants"
+    exec """
+            java -Xmx12g -jar $GATK/GenomeAnalysisTK.jar -T UnifiedGenotyper 
+               -nt $threads 
+               -R $REF 
+               -I $input.bam 
+               --dbsnp $DBSNP 
+               -stand_call_conf 50.0 -stand_emit_conf 10.0 
+               -dcov 1600 
+               -l INFO 
+               -A AlleleBalance -A DepthOfCoverage -A FisherStrand 
+               -glm SNP -log $LOG 
+               -o $output.vcf
+        """
 }
 
 callIndels = {
-    exec "./GenomeAnalysisTK 12 -T UnifiedGenotyper -nt 8 -R $REF -I $input.bam --dbsnp $DBSNP -stand_call_conf 50.0 -stand_emit_conf 10.0 -dcov 1600 -l INFO -A AlleleBalance -A DepthOfCoverage -A FisherStrand -glm INDEL -log $LOG -o $output"
+    doc "Call variants using GATK Unified Genotyper"
+    output.dir="variants"
+    exec """
+        java -Xmx12g -jar $GATK/GenomeAnalysisTK.jar -T UnifiedGenotyper 
+             -nt $threads
+             -R $REF 
+             -I $input.bam 
+             --dbsnp $DBSNP 
+             -stand_call_conf 50.0 -stand_emit_conf 10.0 
+             -dcov 1600 
+             -l INFO 
+             -A AlleleBalance -A DepthOfCoverage -A FisherStrand 
+             -glm INDEL 
+             -log $LOG -o $output.vcf
+    """
 }
 
+@filter("filter")
 filterSNPs = {
     // Very minimal hard filters based on GATK recommendations. VQSR is preferable if possible.
-    exec "./GenomeAnalysisTK 4 -T VariantFiltration -R $REF --variant $input.vcf --filterExpression 'QD < 2.0 || MQ < 40.0 || FS > 60.0 || HaplotypeScore > 13.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0' --filterName 'GATK_MINIMAL_FILTER' -log $LOG -o $output"
+    output.dir="variants"
+    exec """
+        java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar -T VariantFiltration 
+             -R $REF 
+             --filterExpression 'QD < 2.0 || MQ < 40.0 || FS > 60.0 || HaplotypeScore > 13.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0' 
+             --filterName 'GATK_MINIMAL_FILTER'
+             --variant $input.vcf 
+             -log $LOG 
+             -o $output.vcf
+    """
 }
 
+@filter("filter")
 filterIndels = {
-    // Very minimal hard filters based on GATK recommendations. VQSR is preferable if possible.
-    // If you have 10 or more samples GATK also recommends the filter InbreedingCoeff < -0.8
-    exec "./GenomeAnalysisTK 4 -T VariantFiltration -R $REF --variant $input.vcf --filterExpression 'QD < 2.0 || ReadPosRankSum < -20.0 || FS > 200.0' --filterName 'GATK_MINIMAL_FILTER' -log $LOG -o $output"
+    doc """
+            Filter data using very minimal hard filters based on GATK recommendations. VQSR is preferable if possible.
+            If you have 10 or more samples GATK also recommends the filter InbreedingCoeff < -0.8
+        """
+    output.dir="variants"
+    exec """
+        java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar -T VariantFiltration 
+                    -R $REF 
+                    --filterExpression 'QD < 2.0 || ReadPosRankSum < -20.0 || FS > 200.0' 
+                    --filterName 'GATK_MINIMAL_FILTER' -log $LOG 
+                    --variant $input.vcf 
+                    -o $output.vcf
+    """
 }
 
+@filter("vep")
 annotateEnsembl = {
-    // This command as written assumes that VEP and its cache have been
-    // downloaded in respective locations
-    // ./variant_effect_predictor_2.5
-    // ./variant_effect_predictor_2.5/vep_cache
-    exec "perl variant_effect_predictor_2.5/variant_effect_predictor.pl --cache --dir variant_effect_predictor_2.5/vep_cache -i $input.vcf --vcf -o $output -species human --canonical --gene --protein --sift=b --polyphen=b > $LOG"
+    doc "Annotate variants using VEP to add Ensemble annotations"
+    output.dir="variants"
+    exec """
+        perl $VEP/variant_effect_predictor.pl --cache --dir ./vep_cache -i $input.vcf --vcf -o $output.vcf -species human --canonical --per_gene --protein --sift=b --polyphen=b > $LOG
+    """
 }
 
 depthOfCoverage = {
-    exec "./GenomeAnalysisTK 4 -T DepthOfCoverage -R $REF -I $input.bam -omitBaseOutput -ct 1 -ct 10 -ct 20 -ct 30 -o $output"
-}
-
-collateReadcounts = {
-    output.dir = outdir
-    def dir = new File(input).parentFile.name // hack - figure out directory from input file
-    exec "python count_flagstat_wgs.py $dir $outdir"
+    output.dir="qc"
+    transform("bam") to ("sample_statistics","sample_interval_summary") {
+        exec """
+            java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar 
+                    -T DepthOfCoverage 
+                    -R $REF -I $input.bam 
+                    -omitBaseOutput 
+                    -ct 1 -ct 10 -ct 20 -ct 30 
+                    -o $output.prefix
+        """
+    }
 }
