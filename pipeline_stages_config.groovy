@@ -58,7 +58,7 @@ mergeBams = {
 }
 
 indexBam = {
-    produce(input.bam + ".bai") {
+    transform("bam") to ("bam.bai") {
         exec "samtools index $input.bam"
     }
     forward input
