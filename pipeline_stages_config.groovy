@@ -58,6 +58,9 @@ mergeBams = {
 }
 
 indexBam = {
+    // A bit of a hack to ensure the output file is expected in the
+    // same directory as the input bam, no matter where it is
+    output.dir=file(input.bam).absoluteFile.parentFile.absolutePath
     transform("bam") to ("bam.bai") {
         exec "samtools index $input.bam"
     }
