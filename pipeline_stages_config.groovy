@@ -34,6 +34,16 @@ samToSortedBam = {
     doc "Sort a SAM file so that it is compatible with reference order and convert to BAM file"
     output.dir="align"
     exec """
+        java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/AddOrReplaceReadGroups.jar 
+                    INPUT=$input
+                    OUTPUT=$output
+                    RGID=1
+                    RGLB=S0h_-1_S1
+                    RGPL=illumina
+                    RGPU=S0h-1_S1
+                    RGSM=RM8375
+                    RGCN=NIST
+                    RGDS=MiSeq-RM8375
         java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/SortSam.jar 
                     VALIDATION_STRINGENCY=LENIENT 
                     INPUT=$input.sam 
@@ -44,16 +54,7 @@ samToSortedBam = {
 
 readGroups = {
     exec """
-    java -jar ~/picard-tools-1.115/AddOrReplaceReadGroups.jar 
-        INPUT=$input
-        OUTPUT=$output
-        RGID=1
-        RGLB=S0h_-1_S1
-        RGPL=illumina
-        RGPU=S0h-1_S1
-        RGSM=RM8375
-        RGCN=NIST
-        RGDS=MiSeq-RM8375
+
     """
 }
 
