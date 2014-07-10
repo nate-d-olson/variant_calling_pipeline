@@ -46,7 +46,6 @@ load 'pipeline_stages_config.groovy'
 run {
     // Align each pair of input files separately in parallel
     "%_*_R*" * [
-               fastqc +
                "%.gz" * [ bwaMEMalign ]  +
                samToSortedBam + indexBam +
                dedup + indexBam  +
