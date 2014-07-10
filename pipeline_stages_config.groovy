@@ -34,7 +34,7 @@ samToSortedBam = {
     doc "Sort a SAM file so that it is compatible with reference order and convert to BAM file"
     output.dir="align"
     exec"""
-        java -Xmx20g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/SortSam.jar 
+        java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/SortSam.jar 
                     VALIDATION_STRINGENCY=LENIENT 
                     INPUT=$input.sam 
                     OUTPUT=$output.bam 
@@ -45,7 +45,7 @@ samToSortedBam = {
 readGroups = {
     output.dir="align"
     exec """
-        java -Xmx20g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/AddOrReplaceReadGroups.jar 
+        java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/AddOrReplaceReadGroups.jar 
                     INPUT=$input.bam
                     OUTPUT=$output.bam
                     RGID=1
@@ -63,13 +63,13 @@ indexBam = {
     // same directory as the input bam, no matter where it is
     output.dir=file(input.bam).absoluteFile.parentFile.absolutePath
     transform("bam") to ("bam.bai") {
-        exec "samtools index $input.bam"
+        exec "~/bin/samtools index $input.bam"
     }
     forward input
 }
 
 flagstat = {
-    exec "samtools flagstat $input.bam > $output"
+    exec "~/bin/samtools flagstat $input.bam > $output"
 }
 
 
@@ -77,7 +77,7 @@ flagstat = {
 dedup = {
     output.dir="align"
     exec """
-        java -Xmx20g -Djava.io.tmpdir=$TMPDIR -jar $PICARD_HOME/MarkDuplicates.jar
+        java -Xmx2g -Djava.io.tmpdir=$TMPDIR -jar $PICARD_HOME/MarkDuplicates.jar
              INPUT=$input.bam 
              REMOVE_DUPLICATES=true 
              VALIDATION_STRINGENCY=LENIENT 
@@ -90,20 +90,20 @@ dedup = {
 baseQualRecalCount = {
     doc "Recalibrate base qualities in a BAM file so that quality metrics match actual observed error rates"
     output.dir="align"
-    exec "java -Xmx12g -jar $GATK/GenomeAnalysisTK.jar -T BaseRecalibrator -I $input.bam -R $REF --knownSites $DBSNP -l INFO -cov ReadGroupCovariate -cov QualityScoreCovariate -cov CycleCovariate -cov ContextCovariate -log $LOG -o $output.counts"
+    exec "java -Xmx2g -jar $GATK/GenomeAnalysisTK.jar -T BaseRecalibrator -I $input.bam -R $REF --knownSites $DBSNP -l INFO -cov ReadGroupCovariate -cov QualityScoreCovariate -cov CycleCovariate -cov ContextCovariate -log $LOG -o $output.counts"
 }
 
 baseQualRecalTabulate = {
     doc "Recalibrate base qualities in a BAM file so that quality metrics match actual observed error rates"
     output.dir="align"
-    exec "java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar -T PrintReads -I $input.bam -BQSR $input.counts -R $REF -l INFO -log $LOG -o $output"
+    exec "java -Xmx2g -jar $GATK/GenomeAnalysisTK.jar -T PrintReads -I $input.bam -BQSR $input.counts -R $REF -l INFO -log $LOG -o $output"
 }
 
 callSNPs = {
     doc "Call SNPs/SNVs using GATK Unified Genotyper"
     output.dir="variants"
     exec """
-            java -Xmx20g -jar $GATK/GenomeAnalysisTK.jar -T UnifiedGenotyper 
+            java -Xmx2g -jar $GATK/GenomeAnalysisTK.jar -T UnifiedGenotyper 
                -nt $threads 
                -R $REF 
                -I $input.bam 
