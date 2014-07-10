@@ -49,6 +49,6 @@ run {
                bwaMEMalign  +
                samToSortedBam + indexBam +
                dedup + indexBam  +
-               [ callIndels + filterIndels + callSNPs + filterSNPs + annotateEnsembl ] 
+               call_variants_gatk
     ]
 }

@@ -186,3 +186,14 @@ depthOfCoverage = {
         """
     }
 }
+
+@Transform("vcf")
+call_variants_gatk = {
+	exec """
+		java -Xmx4g -jar ~/bin/GenomeAnalysisTK.jar 
+			-R $REF
+			-I $input
+			-T HaplotypeCaller 
+			-o $output
+	"""
+}
