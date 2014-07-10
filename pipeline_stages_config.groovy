@@ -23,7 +23,7 @@ bwaMEMalign = {
 	exec """
 		~/bwa/bwa mem 
 		    -t 2
-			$input.fasta
+			$REF
 			$input1 $input2> $output
 	"""
 }
