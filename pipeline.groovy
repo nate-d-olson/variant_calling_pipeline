@@ -47,7 +47,7 @@ run {
     // Align each pair of input files separately in parallel
     "%_*_R*" * [
                bwaMEMalign  +
-               samToSortedBam + indexBam +
+               samToSortedBam + readGroups + indexBam +
                dedup + indexBam  +
                call_variants_gatk
     ]

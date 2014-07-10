@@ -40,10 +40,14 @@ samToSortedBam = {
                     OUTPUT=$output.bam 
                     SORT_ORDER=coordinate
     """
-     exec """
+}
+
+readGroups = {
+    output.dir="align"
+    exec """
         java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/AddOrReplaceReadGroups.jar 
-                    INPUT=$input
-                    OUTPUT=$output
+                    INPUT=$input.bam
+                    OUTPUT=$output.bam
                     RGID=1
                     RGLB=S0h_-1_S1
                     RGPL=illumina
@@ -51,12 +55,6 @@ samToSortedBam = {
                     RGSM=RM8375
                     RGCN=NIST
                     RGDS=MiSeq-RM8375
-    """
-}
-
-readGroups = {
-    exec """
-
     """
 }
 
