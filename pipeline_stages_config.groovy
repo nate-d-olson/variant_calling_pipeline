@@ -13,23 +13,21 @@ fastqc = {
     }
 }
 
-@transform("sai")
-alignBWA = {
-    doc "Aligns using BWA. Note: assumes input file are gzipped"
-    output.dir="align"
-    exec "bwa aln -t 8 $encoding_flag $REF $input.gz > $output.sai"
+
+ref_index = { 
+	exec "~/bwa/bwa index -a is $input.fasta"
 }
 
-@transform("sam")
-alignToSamPE = {
-    doc "Create SAM files from BWA alignment. Note that these will be very large."
-    output.dir="align"
-    branch.lane = (input.sai =~ /.*L([0-9]*)_*R.*/)[0][1].toInteger()
-    branch.sample = branch.name
-    exec """
-        bwa sampe $REF -r "@RG\\tID:1\\tPL:$PLATFORM\\tPU:${branch.lane}\\tSM:${branch.sample}"  $input1.sai $input2.sai $input2.gz $input2.gz > $output.sam
-    """
+@Transform("bwa.sam")
+bwaMEMalign = {
+	exec """
+		~/bwa/bwa mem 
+		    -t 2
+			$input.fasta
+			$input1 $input2> $output
+	"""
 }
+
 
 @transform("bam")
 samToSortedBam = {
@@ -44,16 +42,18 @@ samToSortedBam = {
     """
 }
 
-@filter("merge")
-mergeBams = {
-    doc "Merge BAM files from multiple lanes or samples together. BAM files should have unique sample names and / or read groups"
+readGroups = {
     exec """
-            java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/MergeSamFiles.jar
-                ${inputs.bam.split().collect { "INPUT="+it }.join(' ')}
-                USE_THREADING=true 
-                VALIDATION_STRINGENCY=LENIENT 
-                AS=true 
-                OUTPUT=$output.bam 
+    java -jar ~/picard-tools-1.115/AddOrReplaceReadGroups.jar 
+        INPUT=$input
+        OUTPUT=$output
+        RGID=1
+        RGLB=S0h_-1_S1
+        RGPL=illumina
+        RGPU=S0h-1_S1
+        RGSM=RM8375
+        RGCN=NIST
+        RGDS=MiSeq-RM8375
     """
 }
 
@@ -71,28 +71,7 @@ flagstat = {
     exec "samtools flagstat $input.bam > $output"
 }
 
-igvcount = {
-    exec "igvtools count $input.bam $output hg19"
-}
 
-indexVCF = {
-    exec "./vcftools_prepare.sh $input.vcf"
-}
-
-realignIntervals = {
-    // Hard-coded to take 2 known indels files right now
-    output.dir="align"
-    exec """
-        java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar -T RealignerTargetCreator -R $REF -I $input.bam --known $GOLD_STANDARD_INDELS --known $INDELS_100G -log $LOG -o $output.intervals
-    """
-}
-
-realign = {
-    output.dir="align"
-    exec """
-        java -Xmx8g -jar $GATK/GenomeAnalysisTK.jar -T IndelRealigner -R $REF -I $input.bam -targetIntervals $input.intervals -log $LOG -o $output.bam
-    """
-}
 
 dedup = {
     output.dir="align"
@@ -127,7 +106,6 @@ callSNPs = {
                -nt $threads 
                -R $REF 
                -I $input.bam 
-               --dbsnp $DBSNP 
                -stand_call_conf 50.0 -stand_emit_conf 10.0 
                -dcov 1600 
                -l INFO 
@@ -145,7 +123,6 @@ callIndels = {
              -nt $threads
              -R $REF 
              -I $input.bam 
-             --dbsnp $DBSNP 
              -stand_call_conf 50.0 -stand_emit_conf 10.0 
              -dcov 1600 
              -l INFO 

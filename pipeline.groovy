@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////
 // GATK-based variant-calling pipeline, WGS version.
-// 
+//  Pipeline port from - https://github.com/ssadedin/variant_calling_pipeline which was a port from
 // This pipeline is a port of the VLSCI whole genome variant
 // calling pipeline from this Git repo to Bpipe:
 // 
@@ -47,18 +47,10 @@ run {
     // Align each pair of input files separately in parallel
     "%_*_R*" * [
                fastqc +
-               "%.gz" * [ alignBWA ]  +
-               alignToSamPE +
+               "%.gz" * [ bwaMEMalign ]  +
                samToSortedBam + indexBam +
-               dedup + indexBam 
-    ] + 
-        // Merge all the bam files afterwards
-        mergeBams + 
-        indexBam + 
-    [ 
-       depthOfCoverage, 
+               dedup + indexBam  +
        realignIntervals + realign + indexBam +
-           baseQualRecalCount + baseQualRecalTabulate + indexBam  +
-               [ callIndels + filterIndels + annotateEnsembl, callSNPs + filterSNPs + annotateEnsembl ] 
+               [ callIndels + filterIndels callSNPs + filterSNPs + annotateEnsembl ] 
     ]
 }
