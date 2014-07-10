@@ -48,7 +48,7 @@ run {
     "%_*_R*" * [
                bwaMEMalign  +
                samToSortedBam + indexBam +
-               dedup + indexBam  +
+               dedup + readGroups + indexBam  +
                call_variants_gatk
     ]
 }
