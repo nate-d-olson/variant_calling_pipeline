@@ -34,7 +34,7 @@ samToSortedBam = {
     doc "Sort a SAM file so that it is compatible with reference order and convert to BAM file"
     output.dir="align"
     exec """
-        java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/lib/SortSam.jar 
+        java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/SortSam.jar 
                     VALIDATION_STRINGENCY=LENIENT 
                     INPUT=$input.sam 
                     OUTPUT=$output.bam 
@@ -76,7 +76,7 @@ flagstat = {
 dedup = {
     output.dir="align"
     exec """
-        java -Xmx6g -Djava.io.tmpdir=$TMPDIR -jar $PICARD_HOME/lib/MarkDuplicates.jar
+        java -Xmx6g -Djava.io.tmpdir=$TMPDIR -jar $PICARD_HOME/MarkDuplicates.jar
              INPUT=$input.bam 
              REMOVE_DUPLICATES=true 
              VALIDATION_STRINGENCY=LENIENT 
