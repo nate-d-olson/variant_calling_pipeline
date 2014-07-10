@@ -33,7 +33,14 @@ bwaMEMalign = {
 samToSortedBam = {
     doc "Sort a SAM file so that it is compatible with reference order and convert to BAM file"
     output.dir="align"
-    exec """
+    exec"""
+        java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/SortSam.jar 
+                    VALIDATION_STRINGENCY=LENIENT 
+                    INPUT=$input.sam 
+                    OUTPUT=$output.bam 
+                    SORT_ORDER=coordinate
+    """
+     exec """
         java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/AddOrReplaceReadGroups.jar 
                     INPUT=$input
                     OUTPUT=$output
@@ -44,13 +51,6 @@ samToSortedBam = {
                     RGSM=RM8375
                     RGCN=NIST
                     RGDS=MiSeq-RM8375
-    """
-    exec"""
-        java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/SortSam.jar 
-                    VALIDATION_STRINGENCY=LENIENT 
-                    INPUT=$input.sam 
-                    OUTPUT=$output.bam 
-                    SORT_ORDER=coordinate
     """
 }
 
