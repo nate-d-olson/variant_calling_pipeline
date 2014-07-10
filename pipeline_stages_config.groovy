@@ -63,7 +63,7 @@ indexBam = {
     // same directory as the input bam, no matter where it is
     output.dir=file(input.bam).absoluteFile.parentFile.absolutePath
     transform("bam") to ("bam.bai") {
-        exec "samtools index $input.bam"
+        exec "~/bin/samtools index $input.bam"
     }
     forward input
 }
