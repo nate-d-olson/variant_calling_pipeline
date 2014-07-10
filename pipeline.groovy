@@ -51,6 +51,6 @@ run {
                samToSortedBam + indexBam +
                dedup + indexBam  +
        realignIntervals + realign + indexBam +
-               [ callIndels + filterIndels callSNPs + filterSNPs + annotateEnsembl ] 
+               [ callIndels + filterIndels + callSNPs + filterSNPs + annotateEnsembl ] 
     ]
 }
