@@ -22,7 +22,7 @@ ref_index = {
 bwaMEMalign = {
 	exec """
 		~/bwa/bwa mem 
-		    -t 2
+		    -t 8
 			$REF
 			$input1 $input2> $output
 	"""
@@ -34,7 +34,7 @@ samToSortedBam = {
     doc "Sort a SAM file so that it is compatible with reference order and convert to BAM file"
     output.dir="align"
     exec"""
-        java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/SortSam.jar 
+        java -Xmx20g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/SortSam.jar 
                     VALIDATION_STRINGENCY=LENIENT 
                     INPUT=$input.sam 
                     OUTPUT=$output.bam 
@@ -45,7 +45,7 @@ samToSortedBam = {
 readGroups = {
     output.dir="align"
     exec """
-        java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/AddOrReplaceReadGroups.jar 
+        java -Xmx20g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/AddOrReplaceReadGroups.jar 
                     INPUT=$input.bam
                     OUTPUT=$output.bam
                     RGID=1
@@ -77,7 +77,7 @@ flagstat = {
 dedup = {
     output.dir="align"
     exec """
-        java -Xmx6g -Djava.io.tmpdir=$TMPDIR -jar $PICARD_HOME/MarkDuplicates.jar
+        java -Xmx20g -Djava.io.tmpdir=$TMPDIR -jar $PICARD_HOME/MarkDuplicates.jar
              INPUT=$input.bam 
              REMOVE_DUPLICATES=true 
              VALIDATION_STRINGENCY=LENIENT 
@@ -103,7 +103,7 @@ callSNPs = {
     doc "Call SNPs/SNVs using GATK Unified Genotyper"
     output.dir="variants"
     exec """
-            java -Xmx12g -jar $GATK/GenomeAnalysisTK.jar -T UnifiedGenotyper 
+            java -Xmx20g -jar $GATK/GenomeAnalysisTK.jar -T UnifiedGenotyper 
                -nt $threads 
                -R $REF 
                -I $input.bam 
@@ -120,7 +120,7 @@ callIndels = {
     doc "Call variants using GATK Unified Genotyper"
     output.dir="variants"
     exec """
-        java -Xmx12g -jar $GATK/GenomeAnalysisTK.jar -T UnifiedGenotyper 
+        java -Xmx20g -jar $GATK/GenomeAnalysisTK.jar -T UnifiedGenotyper 
              -nt $threads
              -R $REF 
              -I $input.bam 
@@ -138,7 +138,7 @@ filterSNPs = {
     // Very minimal hard filters based on GATK recommendations. VQSR is preferable if possible.
     output.dir="variants"
     exec """
-        java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar -T VariantFiltration 
+        java -Xmx20g -jar $GATK/GenomeAnalysisTK.jar -T VariantFiltration 
              -R $REF 
              --filterExpression 'QD < 2.0 || MQ < 40.0 || FS > 60.0 || HaplotypeScore > 13.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0' 
              --filterName 'GATK_MINIMAL_FILTER'
@@ -156,7 +156,7 @@ filterIndels = {
         """
     output.dir="variants"
     exec """
-        java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar -T VariantFiltration 
+        java -Xmx20g -jar $GATK/GenomeAnalysisTK.jar -T VariantFiltration 
                     -R $REF 
                     --filterExpression 'QD < 2.0 || ReadPosRankSum < -20.0 || FS > 200.0' 
                     --filterName 'GATK_MINIMAL_FILTER' -log $LOG 
@@ -178,7 +178,7 @@ depthOfCoverage = {
     output.dir="qc"
     transform("bam") to ("sample_statistics","sample_interval_summary") {
         exec """
-            java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar 
+            java -Xmx20g -jar $GATK/GenomeAnalysisTK.jar 
                     -T DepthOfCoverage 
                     -R $REF -I $input.bam 
                     -omitBaseOutput 
@@ -191,7 +191,8 @@ depthOfCoverage = {
 @Transform("vcf")
 call_variants_gatk = {
 	exec """
-		java -Xmx4g -jar ~/bin/GenomeAnalysisTK.jar 
+		java -Xmx20g -jar ~/bin/GenomeAnalysisTK.jar 
+		    -ntc 8
 			-R $REF
 			-I $input
 			-T HaplotypeCaller 
