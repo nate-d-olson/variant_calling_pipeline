@@ -50,7 +50,6 @@ run {
                "%.gz" * [ bwaMEMalign ]  +
                samToSortedBam + indexBam +
                dedup + indexBam  +
-       realignIntervals + realign + indexBam +
                [ callIndels + filterIndels + callSNPs + filterSNPs + annotateEnsembl ] 
     ]
 }
