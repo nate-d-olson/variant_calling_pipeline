@@ -44,6 +44,8 @@ samToSortedBam = {
                     RGSM=RM8375
                     RGCN=NIST
                     RGDS=MiSeq-RM8375
+    """
+    exec"""
         java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $PICARD_HOME/SortSam.jar 
                     VALIDATION_STRINGENCY=LENIENT 
                     INPUT=$input.sam 
