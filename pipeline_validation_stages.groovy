@@ -5,8 +5,9 @@
 // 
 ////////////////////////////////////////////////////////
 
+
 ref_index = { 
-	exec "$BIN/bwa index -a is $input.fasta"
+            exec "$BIN/bwa index -a is $input.fasta"
 }
 
 @Transform("bwa.sam")
@@ -15,8 +16,9 @@ bwaMEMalign = {
 		$BIN/bwa mem 
 		    -t $n
 			$input.fasta
-			$input1.fastq.gz $input2.fastq.gz > $input.fasta.prefix.$output
+			$input1.fastq.gz $input2.fastq.gz > $output
 	"""
+    }
 }
 
 
@@ -26,55 +28,34 @@ samToSortedBam = {
     exec"""
         java $JHEAP -jar $BIN/SortSam.jar 
                     VALIDATION_STRINGENCY=LENIENT 
-                    INPUT=$input.fasta.prefix.$input 
-                    OUTPUT=$input.fasta.prefix.$output
+                    INPUT=$input 
+                    OUTPUT=$output
                     SORT_ORDER=coordinate
     """
 }
 
-readGroups = {
-	// will want to work to specify values
-    exec """
-        java $JHEAP -jar $BIN/AddOrReplaceReadGroups.jar 
-                    INPUT=$input.fasta.prefix.$input 
-                    OUTPUT=$input.fasta.prefix.$output
-                    RGID=1
-                    RGLB=S0h_-1_S1
-                    RGPL=illumina
-                    RGPU=S0h-1_S1
-                    RGSM=RM8375
-                    RGCN=NIST
-                    RGDS=MiSeq-RM8375
-    """
-}
-
+@Transform("bam.bai")
 indexBam = {
-    // A bit of a hack to ensure the output file is expected in the
-    // same directory as the input bam, no matter where it is
-    output.dir=file(input.bam).absoluteFile.parentFile.absolutePath
-    transform("bam") to ("bam.bai") {
-        exec "$BIN/samtools index $input.fasta.prefix.$input"
-    }
-    forward input
+    exec "$BIN/samtools index $input"
+    forward input $output
 }
 
-@Transform("dedup.bam")
+@Filter("dedup")
 dedup = {
     exec """
         java $JHEAP  -jar $BIN/MarkDuplicates.jar
-             INPUT=$input.fasta.prefix.$input 
+             INPUT=$input 
              REMOVE_DUPLICATES=true 
              VALIDATION_STRINGENCY=LENIENT 
              AS=true 
              METRICS_FILE=$LOG 
-             OUTPUT=$input.fasta.prefix.$output
+             OUTPUT=$output
     """
 }
 
 @Transform("vcf")
 call_variants_freebayes = {
 	exec """
-		$BIN/freebayes -p 1
-		-v $input.fasta.prefix.$output -f $input.fasta -b $input.fasta.prefix.$input
+		$BIN/freebayes -p 1 -f $input.fasta -b $input -v $output
 	"""
 }

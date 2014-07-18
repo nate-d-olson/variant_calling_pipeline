@@ -13,7 +13,7 @@ BIN="$PRJ_HOME/bin"
 LOG="pipeline.log"
 
 // Number of threads
-n=7
+n=1 //bpipe running in parallel - only run individual stages as single threads
 
 // java heap size
 JHEAP="-Xmx8g"
