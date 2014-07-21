@@ -5,10 +5,11 @@
 // 
 ////////////////////////////////////////////////////////
 
-
+//@Produce("sample001.fasta.amb")//,"${input.fasta}.ann","${input.fasta}.bwt","${input.fasta}.pac","${input.fasta}.sa")
 ref_index = { 
-            exec "$BIN/bwa index -a is $input.fasta"
+    exec "$BIN/bwa index -a is $input.fasta"
 }
+
 
 @Transform("bwa.sam")
 bwaMEMalign = {
@@ -16,9 +17,8 @@ bwaMEMalign = {
 		$BIN/bwa mem 
 		    -t $n
 			$input.fasta
-			$input1.fastq.gz $input2.fastq.gz > $output
+			$inputs.fastq.gz > $output
 	"""
-    }
 }
 
 
@@ -34,13 +34,33 @@ samToSortedBam = {
     """
 }
 
-@Transform("bam.bai")
-indexBam = {
-    exec "$BIN/samtools index $input"
-    forward input $output
+readGroups = {
+	// will want to work to specify values
+    exec """
+        java $JHEAP -jar $BIN/AddOrReplaceReadGroups.jar 
+                    INPUT=$input 
+                    OUTPUT=$output
+                    RGID=1
+                    RGLB=S0h_-1_S1
+                    RGPL=illumina
+                    RGPU=S0h-1_S1
+                    RGSM=RM8375
+                    RGCN=NIST
+                    RGDS=MiSeq-RM8375
+    """
 }
 
-@Filter("dedup")
+indexBam = {
+    // A bit of a hack to ensure the output file is expected in the
+    // same directory as the input bam, no matter where it is
+    output.dir=file(input.bam).absoluteFile.parentFile.absolutePath
+    transform("bam") to ("bam.bai") {
+        exec "$BIN/samtools index $input"
+    }
+    forward input
+}
+
+@Transform("dedup.bam")
 dedup = {
     exec """
         java $JHEAP  -jar $BIN/MarkDuplicates.jar
@@ -56,6 +76,6 @@ dedup = {
 @Transform("vcf")
 call_variants_freebayes = {
 	exec """
-		$BIN/freebayes -p 1 -f $input.fasta -b $input -v $output
+		$BIN/freebayes -p 1 -@ ../../references/sim/sim_variants.vcf.gz -v $output -f $input.fasta -b $input
 	"""
 }
