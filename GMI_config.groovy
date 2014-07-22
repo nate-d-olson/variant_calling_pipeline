@@ -17,4 +17,4 @@ LOG="pipeline.log"
 n=8 //bpipe running in parallel - only run individual stages as single threads
 
 // java heap size
-JHEAP="-Xmx8g"
+JHEAP="-Xmx4g"
