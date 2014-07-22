@@ -41,7 +41,7 @@
 load '/home/ubuntu/GMI_bioinf/variant_calling_pipeline/GMI_config.groovy'
 
 // All the core pipeline stages in the pipeline
-load '$PRJ_HOME/pipeline_stages_config.groovy'
+load '$PRJ_HOME/pipeline_GMI_stages.groovy'
 
 run {
     // Align each pair of input files separately in parallel
