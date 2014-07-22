@@ -7,7 +7,8 @@ REFBASE="$PRJ_HOME/references"
 TMPDIR="$PRJ_HOME/tmp"
 
 // Set location of executables
-BIN="$PRJ_HOME/bin"
+BIN="~/bin"
+BWA_BIN="~/bwa"
 
 // Log data from various tools will appear in here
 LOG="pipeline.log"

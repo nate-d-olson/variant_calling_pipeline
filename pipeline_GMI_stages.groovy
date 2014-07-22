@@ -6,14 +6,14 @@
 ////////////////////////////////////////////////////////
 
 ref_index = { 
-    exec "$BIN/bwa index -a is $input.fasta"
+    exec "$BWA_BIN/bwa index -a is $input.fasta"
 }
 
 
 @Transform("bwa.sam")
 bwaMEMalign = {
 	exec """
-		$BIN/bwa mem 
+		$BWA_BIN/bwa mem 
 		    -t $n
 			$input.fasta
 			$inputs.fastq.gz > $output
