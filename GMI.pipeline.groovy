@@ -38,7 +38,7 @@
 ////////////////////////////////////////////////////////////
 
 // Create this file by copying config.groovy.template and editing
-load '/home/ubuntu/GMI_bioinf/variant_calling_pipeline'
+load '/home/ubuntu/GMI_bioinf/variant_calling_pipeline/GMI.config.groovy'
 
 // All the core pipeline stages in the pipeline
 load '$PRJ_HOME/pipeline_stages_config.groovy'
