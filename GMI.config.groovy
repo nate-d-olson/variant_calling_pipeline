@@ -1,5 +1,5 @@
 //Project directory
-PRJ_HOME="/home/ubuntu/GMI_bioinf"
+PRJ_HOME="/home/ubuntu/GMI_bioinf/variant_calling_pipeline"
 // Set location of you reference files here (see below for the files required)
 REFBASE="$PRJ_HOME/references"
 
