@@ -17,7 +17,7 @@ bwaMEMalign = {
 		$BIN/bwa mem 
 		    -t $n
 			$input.fasta
-			$inputs.fastq.gz > $output
+			$inputs.fastq.gz > $input.fasta.prefix.$output
 	"""
 }
 
@@ -28,8 +28,8 @@ samToSortedBam = {
     exec"""
         java $JHEAP -jar $BIN/SortSam.jar 
                     VALIDATION_STRINGENCY=LENIENT 
-                    INPUT=$input 
-                    OUTPUT=$output
+                    INPUT=$input.fasta.prefix.$input
+                    OUTPUT=$input.fasta.prefix.$output
                     SORT_ORDER=coordinate
     """
 }
@@ -38,8 +38,8 @@ readGroups = {
 	// will want to work to specify values
     exec """
         java $JHEAP -jar $BIN/AddOrReplaceReadGroups.jar 
-                    INPUT=$input 
-                    OUTPUT=$output
+                    INPUT=$input.fasta.prefix.$input
+                    OUTPUT=$input.fasta.prefix.$output
                     RGID=1
                     RGLB=S0h_-1_S1
                     RGPL=illumina
@@ -55,7 +55,7 @@ indexBam = {
     // same directory as the input bam, no matter where it is
     output.dir=file(input.bam).absoluteFile.parentFile.absolutePath
     transform("bam") to ("bam.bai") {
-        exec "$BIN/samtools index $input"
+        exec "$BIN/samtools index $input.fasta.prefix.$input"
     }
     forward input
 }
@@ -64,18 +64,18 @@ indexBam = {
 dedup = {
     exec """
         java $JHEAP  -jar $BIN/MarkDuplicates.jar
-             INPUT=$input 
+             INPUT=$input.fasta.prefix.$input
              REMOVE_DUPLICATES=true 
-             VALIDATION_STRINGENCY=LENIENT 
+             VALIDATION_STRINGENCY=LENIENT
              AS=true 
              METRICS_FILE=$LOG 
-             OUTPUT=$output
+             OUTPUT=$input.fasta.prefix.$output
     """
 }
 
 @Transform("vcf")
 call_variants_freebayes = {
 	exec """
-		$BIN/freebayes -p 1 -@ ../../references/sim/sim_variants.vcf.gz -v $output -f $input.fasta -b $input
+		$BIN/freebayes -p 1 -@ ../../references/sim/sim_variants.vcf.gz -v $input.fasta.prefix.$output -f $input.fasta -b $input.fasta.prefix.$input
 	"""
 }

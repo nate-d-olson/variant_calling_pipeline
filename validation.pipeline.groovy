@@ -44,7 +44,7 @@ load "/media/nolson/second/mirror/micro_rm_dev/variant_calling_pipeline/validati
 load "$PRJ_HOME/variant_calling_pipeline/pipeline_validation_stages.groovy"
 
 run {
-	"%.fasta" * [ref_index + "%_L001_R*" * [ bwaMEMalign  + samToSortedBam + indexBam + dedup + indexBam  + call_variants_freebayes ]]
-	//"%.fasta" * ["%_L001_R*" * [ bwaMEMalign  + samToSortedBam + indexBam + dedup + indexBam  + call_variants_freebayes ]]
+	//"%.fasta" * [ref_index + "%_L001_R*" * [ bwaMEMalign  + samToSortedBam + indexBam + dedup + indexBam  + call_variants_freebayes ]]
+	"%.fasta" * ["%_L001_R*" * [ bwaMEMalign  + samToSortedBam + indexBam + dedup + indexBam  + call_variants_freebayes ]]
 }
 
