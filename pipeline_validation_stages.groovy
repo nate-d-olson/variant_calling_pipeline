@@ -6,39 +6,38 @@
 ////////////////////////////////////////////////////////
 
 ref_index = { 
-	exec "$BIN/bwa index -a is $REF"
+	exec "$BIN/bwa index -a is $input.fasta"
 }
 
 @Transform("bwa.sam")
 bwaMEMalign = {
 	exec """
-		~/bwa/bwa mem 
-		    -t n
-			$REF
-			$input1 $input2> $output
+		$BIN/bwa mem 
+		    -t $n
+			$input.fasta
+			$input1.fastq.gz $input2.fastq.gz > $input.fasta.prefix.$output
 	"""
 }
 
 
-@transform("bam")
+@Transform("bam")
 samToSortedBam = {
     doc "Sort a SAM file so that it is compatible with reference order and convert to BAM file"
-    output.dir=$ALIGN
     exec"""
-        java $JHEAP -Djava.io.tmpdir=$TMPDIR  -jar $BIN/SortSam.jar 
+        java $JHEAP -jar $BIN/SortSam.jar 
                     VALIDATION_STRINGENCY=LENIENT 
-                    INPUT=$input.sam 
-                    OUTPUT=$output.bam 
+                    INPUT=$input.fasta.prefix.$input 
+                    OUTPUT=$input.fasta.prefix.$output
                     SORT_ORDER=coordinate
     """
 }
 
 readGroups = {
-    output.dir="align"
+	// will want to work to specify values
     exec """
-        java -Xmx2g -Djava.io.tmpdir=$TMPDIR  -jar $BIN/AddOrReplaceReadGroups.jar 
-                    INPUT=$input.bam
-                    OUTPUT=$output.bam
+        java $JHEAP -jar $BIN/AddOrReplaceReadGroups.jar 
+                    INPUT=$input.fasta.prefix.$input 
+                    OUTPUT=$input.fasta.prefix.$output
                     RGID=1
                     RGLB=S0h_-1_S1
                     RGPL=illumina
@@ -49,34 +48,33 @@ readGroups = {
     """
 }
 
-@filter("")
 indexBam = {
     // A bit of a hack to ensure the output file is expected in the
     // same directory as the input bam, no matter where it is
     output.dir=file(input.bam).absoluteFile.parentFile.absolutePath
     transform("bam") to ("bam.bai") {
-        exec "~/bin/samtools index $input.bam"
+        exec "$BIN/samtools index $input.fasta.prefix.$input"
     }
     forward input
 }
 
-
+@Transform("dedup.bam")
 dedup = {
-    output.dir="align"
     exec """
-        java -Xmx2g  -jar $BIN/MarkDuplicates.jar
-             INPUT=$input.bam 
+        java $JHEAP  -jar $BIN/MarkDuplicates.jar
+             INPUT=$input.fasta.prefix.$input 
              REMOVE_DUPLICATES=true 
              VALIDATION_STRINGENCY=LENIENT 
              AS=true 
              METRICS_FILE=$LOG 
-             OUTPUT=$output.bam
+             OUTPUT=$input.fasta.prefix.$output
     """
 }
 
 @Transform("vcf")
-call_variants_gatk = {
+call_variants_freebayes = {
 	exec """
-		$BIN/freebayes -v $output -f $REF -b $input
+		$BIN/freebayes -p 1
+		-v $input.fasta.prefix.$output -f $input.fasta -b $input.fasta.prefix.$input
 	"""
 }
