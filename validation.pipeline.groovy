@@ -38,11 +38,22 @@
 ////////////////////////////////////////////////////////////
 
 // Create this file by copying config.groovy.template and editing
+<<<<<<< HEAD
 load "/home/nolson/Desktop/micro_rm_dev/variant_calling_pipeline/validation.config.groovy"
+=======
+load "/media/nolson/second/mirror/micro_rm_dev/variant_calling_pipeline/validation.config.groovy"
+>>>>>>> 2937bf88ff6840836e222b947c9a056ad4bfa317
 
 // All the core pipeline stages in the pipeline
 load "$PRJ_HOME/variant_calling_pipeline/pipeline_validation_stages.groovy"
 
 run {
+<<<<<<< HEAD
 	"%.fasta" * [ref_index + "%_*_R*" * [ bwaMEMalign  + samToSortedBam + indexBam + dedup + indexBam  + call_variants_freebayes ]]
 }
+=======
+	//"%.fasta" * [ref_index + "%_L001_R*" * [ bwaMEMalign  + samToSortedBam + indexBam + dedup + indexBam  + call_variants_freebayes ]]
+	"%.fasta" * ["%_L001_R*" * [ bwaMEMalign  + samToSortedBam + indexBam + dedup + indexBam  + call_variants_freebayes ]]
+}
+
+>>>>>>> 2937bf88ff6840836e222b947c9a056ad4bfa317
