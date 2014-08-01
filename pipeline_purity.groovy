@@ -18,7 +18,7 @@
 //load "$PRJ_HOME/variant_calling_pipeline/pipeline_validation_stages.groovy"
 
 //REF="/media/nolson/second/DATAFILES/Bacteria/all_bac_genomes.fasta"
-REF="~/pathoscope/all_bac/all_bac_genomes.fasta"
+REF="~/data/all_bac/all_bac_genomes.fasta"
 
 @Transform("bwa.sam")
 bwaMEMallOut = {
@@ -29,7 +29,7 @@ bwaMEMallOut = {
 
 pathoscope = {
 	exec """
-		python pathoscope/pathoscope.py 
+		python /home/ubuntu/pathoscope2/pathoscope/pathoscope.py 
 		-f=$input -o -verbose -noUpdatedAlignFile -s=0.1 -e=$output
 	"""
 }
