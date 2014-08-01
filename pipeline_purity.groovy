@@ -17,19 +17,19 @@
 // All the core pipeline stages in the pipeline
 //load "$PRJ_HOME/variant_calling_pipeline/pipeline_validation_stages.groovy"
 
-REF="/media/nolson/second/DATAFILES/Bacteria/all_bac_genomes.fasta"
-
+//REF="/media/nolson/second/DATAFILES/Bacteria/all_bac_genomes.fasta"
+REF="~/pathoscope/all_bac/all_bac_genomes.fasta"
 
 @Transform("bwa.sam")
 bwaMEMallOut = {
 	exec """
-		~/Desktop/micro_rm_dev/bin/bwa mem -t 4 -a $REF $input1.fastq $input2.fastq > $output
+		~/bwa/bwa mem -t 4 -a $REF $input1.fastq $input2.fastq > $output
 	"""
 }
 
 pathoscope = {
 	exec """
-		python /media/nolson/second/mirror/purity_study/src/pathoscope/pathoscope.py 
+		python pathoscope/pathoscope.py 
 		-f=$input -o -verbose -noUpdatedAlignFile -s=0.1 -e=$output
 	"""
 }
