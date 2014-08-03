@@ -23,7 +23,7 @@ REF="~/GMI_bioinf/all_bac/all_bac_genomes.fasta"
 @Transform("bwa.sam")
 bwaMEMallOut = {
 	exec """
-		~/bwa/bwa mem -t 4 -a $REF $input1.fastq $input2.fastq > $output
+		~/bwa/bwa mem -t 8 -a $REF $input1.fastq $input2.fastq > $output
 	"""
 }
 
