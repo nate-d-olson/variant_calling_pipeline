@@ -18,7 +18,7 @@
 //load "$PRJ_HOME/variant_calling_pipeline/pipeline_validation_stages.groovy"
 
 //REF="/media/nolson/second/DATAFILES/Bacteria/all_bac_genomes.fasta"
-REF="~/data/all_bac/all_bac_genomes.fasta"
+REF="~/GMI_bioinf/all_bac/all_bac_genomes.fasta"
 
 @Transform("bwa.sam")
 bwaMEMallOut = {
