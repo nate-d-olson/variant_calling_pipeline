@@ -29,8 +29,8 @@ bwaMEMallOut = {
 
 pathoscope = {
 	exec """
-		python /home/ubuntu/pathoscope2/pathoscope/pathoscope.py 
-		-f=$input -o -verbose -noUpdatedAlignFile -s=0.1 -e=$output
+		python /home/ubuntu/pathoscope2/pathoscope/pathoscope.py --verbose REP
+		-samfile=$input
 	"""
 }
 
