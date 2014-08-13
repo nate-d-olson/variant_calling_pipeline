@@ -6,7 +6,7 @@
 
 de_novo = {
 	exec """
-		perl a5_/home/ubuntu/GMI_bioinf/a5_miseq_linux_20140604/bin/a5_pipeline.pl $inputs.fastq.gz
+		perl /home/ubuntu/GMI_bioinf/a5_miseq_linux_20140604/bin/a5_pipeline.pl $inputs.fastq.gz
 		$output
 	"""
 }
