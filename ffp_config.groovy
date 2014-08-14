@@ -5,7 +5,7 @@ MAXOVERLAP=150
 KMER=5
 
 //Number of bootstrap replicates
-REP=100
+REP=10
 
 //Minimum quality
 QMIN=30

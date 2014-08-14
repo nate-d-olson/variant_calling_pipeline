@@ -51,7 +51,7 @@ convert_fastq_to_fasta = {
     """
 }
 
-@Transform("vec.txt")
+@Transform("vec")
 ffp_vectors = {
     doc "create ffp vector file"
     exec """
@@ -59,24 +59,23 @@ ffp_vectors = {
     """
 }
 
-@Transform("names.txt")
+@Produce("names.txt")
 file_names = {
     doc "list of file names for phylogenetic analysis"
     exec """
-        ls $inputs.fasta | sed 's/_L001_R1_001.extendedFrags.combinded.clean.fasta//g'  > $output
+        ls $inputs.fasta | sed 's/_L001_R1_001.extendedFrags.combined.clean.fasta//g'  > names.txt
     """
-    forward input
 }
 
-@Transform("mat")
+@Produce("boot_matrix")
 ffp_boot = {
     doc "bootstrap replicates converting vectors to matrix"
     exec """
         for i in \$(seq 1 1 $REP);
-            do;
-                ffpboot $input.vec.txt | 
+            do
+                ffpboot $input.vec | 
                 ffprwn | 
-                ffpjsd -p $input.names.txt >> $output;
+                ffpjsd -p names.txt >> boot_matrix;
             done
     """
 }
